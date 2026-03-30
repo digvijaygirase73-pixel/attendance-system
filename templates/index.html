@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AttendanceOS - Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#0d0f14;--surface:#161a23;--border:#262c3a;--accent:#4fd1c5;--accent2:#f6ad55;--text:#e8eaf0;--muted:#7a8099}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    nav{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2.5rem;border-bottom:1px solid var(--border);background:var(--surface)}
+    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:var(--accent)}
+    nav a{color:var(--muted);text-decoration:none;font-size:.9rem;margin-left:2rem}
+    nav a:hover{color:var(--text)}
+    .container{max-width:860px;margin:0 auto;padding:3rem 1.5rem}
+    .hero{text-align:center;padding:4rem 0 3rem}
+    .hero h1{font-family:'Syne',sans-serif;font-size:3rem;font-weight:800;margin-bottom:1rem}
+    .hero h1 span{color:var(--accent)}
+    .hero p{color:var(--muted);font-size:1rem;max-width:460px;margin:0 auto 2rem;line-height:1.7}
+    .btn{display:inline-block;padding:.7rem 1.8rem;border-radius:8px;font-weight:500;text-decoration:none;font-size:.95rem;transition:opacity .2s}
+    .btn:hover{opacity:.8}
+    .btn-primary{background:var(--accent);color:#0d0f14}
+    .btn-ghost{border:1px solid var(--border);color:var(--text);margin-left:.8rem}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:3rem}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem}
+    .card .icon{font-size:1.8rem;margin-bottom:.7rem}
+    .card h3{font-family:'Syne',sans-serif;font-size:.95rem;margin-bottom:.3rem}
+    .card p{color:var(--muted);font-size:.85rem;line-height:1.6}
+    .section-title{font-family:'Syne',sans-serif;font-size:1.2rem;margin:3rem 0 1rem;color:var(--accent2)}
+    .student-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.2rem;margin-bottom:.6rem}
+    .info{font-size:.9rem}
+    .info small{color:var(--muted);display:block;font-size:.78rem}
+    .mark-btns a{display:inline-block;padding:.35rem .9rem;border-radius:6px;font-size:.8rem;text-decoration:none;font-weight:500;margin-left:.4rem}
+    .present-btn{background:#1e4035;color:#4fd1a5;border:1px solid #2d6050}
+    .absent-btn{background:#3d1e1e;color:#f87171;border:1px solid #5c2e2e}
+    .badge{display:inline-block;padding:.2rem .7rem;border-radius:99px;font-size:.75rem;font-weight:500;margin-left:.5rem}
+    .badge-present{background:#1e4035;color:#4fd1a5}
+    .badge-absent{background:#3d1e1e;color:#f87171}
+    .badge-none{background:#1e2030;color:#7a8099}
+  </style>
+</head>
+<body>
+<nav>
+  <span class="logo">⬡ AttendanceOS</span>
+  <div><a href="/">Home</a><a href="/attendance">View Records</a></div>
+</nav>
+<div class="container">
+  <div class="hero">
+    <h1>Welcome to <span>AttendanceOS</span></h1>
+    <p>A simple, fast way to mark and track student attendance. No fuss, just results.</p>
+    <a href="/attendance" class="btn btn-primary">View Records</a>
+    <a href="#mark" class="btn btn-ghost">Mark Attendance ↓</a>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="icon">📋</div><h3>Track Students</h3><p>Keep a clear record of who's present and absent each session.</p></div>
+    <div class="card"><div class="icon">⚡</div><h3>One-Click Marking</h3><p>Mark attendance instantly with a single click — no forms needed.</p></div>
+    <div class="card"><div class="icon">📊</div><h3>View Reports</h3><p>See the full attendance sheet anytime from the records page.</p></div>
+  </div>
+
+  <h2 class="section-title" id="mark">Quick Mark Attendance</h2>
+
+  {% for s in students %}
+  <div class="student-row">
+    <div class="info">
+      {{ s.name }}
+      <small>Roll {{ s.roll }}
+        {% set status = attendance.get(s.id, '') %}
+        {% if status == 'Present' %}
+          <span class="badge badge-present">✓ Present</span>
+        {% elif status == 'Absent' %}
+          <span class="badge badge-absent">✗ Absent</span>
+        {% else %}
+          <span class="badge badge-none">— Not Marked</span>
+        {% endif %}
+      </small>
+    </div>
+    <div class="mark-btns">
+      <a href="/mark/{{ s.id }}/Present" class="present-btn">✓ Present</a>
+      <a href="/mark/{{ s.id }}/Absent"  class="absent-btn">✗ Absent</a>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+</body>
+</html>

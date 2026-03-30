@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Holiday Calendar — AttendancePro{% endblock %}
+{% block page_title %}Holiday Calendar{% endblock %}
+
+{% block extra_styles %}
+<style>
+.api-banner{background:linear-gradient(135deg,#1e40af,#2563eb);border-radius:var(--radius-lg);padding:1.25rem 1.75rem;margin-bottom:1.5rem;color:white;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.api-icon{width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.api-icon svg{width:22px;height:22px;stroke:white;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.api-title{font-size:1rem;font-weight:800;margin-bottom:.15rem}
+.api-sub{font-size:.78rem;opacity:.75}
+
+.live-badge{display:inline-flex;align-items:center;gap:.4rem;background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;border-radius:99px;padding:.25rem .8rem;font-size:.73rem;font-weight:700}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#16a34a;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.filter-card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1.5rem;box-shadow:var(--shadow-xs)}
+.filter-row{display:flex;align-items:flex-end;gap:.9rem;flex-wrap:wrap}
+.filter-row .fg{display:flex;flex-direction:column;gap:.3rem}
+.filter-row .fg label{font-size:.78rem;font-weight:600;color:var(--gray-600)}
+
+.holiday-row{display:flex;align-items:center;gap:1rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--gray-100)}
+.holiday-row:last-child{border-bottom:none}
+.holiday-row:hover{background:var(--gray-50)}
+.h-date{min-width:100px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--gray-400)}
+.h-name{font-size:.875rem;font-weight:600;color:var(--gray-800);flex:1}
+.h-local{font-size:.73rem;color:var(--gray-400);margin-top:.1rem}
+
+.upcoming-item{display:flex;align-items:center;gap:1rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--gray-100)}
+.upcoming-item:last-child{border-bottom:none}
+.date-box{width:44px;height:44px;border-radius:10px;background:var(--primary-light);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.date-day{font-size:.95rem;font-weight:800;color:var(--primary);line-height:1}
+.date-mon{font-size:.58rem;font-weight:700;color:var(--primary);text-transform:uppercase}
+
+.today-alert{background:linear-gradient(135deg,#fef3c7,#fffbeb);border:1px solid #fde68a;border-radius:var(--radius-lg);padding:1rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1rem}
+.today-alert svg{width:22px;height:22px;stroke:var(--warning);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.today-alert-title{font-weight:700;color:var(--warning);font-size:.95rem}
+.today-alert-sub{font-size:.8rem;color:var(--gray-500);margin-top:.1rem}
+
+.error-box{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--radius-lg);padding:2rem;text-align:center}
+.error-box svg{width:32px;height:32px;stroke:var(--danger);fill:none;stroke-width:1.5;margin-bottom:.5rem}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Banner -->
+<div class="api-banner">
+  <div class="api-icon">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  </div>
+  <div>
+    <div class="api-title">Public Holiday Calendar</div>
+    <div class="api-sub">Live holiday data powered by Nager.Date external API</div>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="filter-card">
+  <div style="font-size:.85rem;font-weight:700;color:var(--gray-700);margin-bottom:1rem">Search Holidays</div>
+  <form method="GET" action="{{ url_for('holidays') }}" class="filter-row">
+    <input type="hidden" name="fetch" value="1">
+    <div class="fg">
+      <label>Country</label>
+      <select class="form-input" name="country" style="width:170px">
+        {% for code, name in countries %}
+          <option value="{{ code }}" {{ 'selected' if country == code }}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="fg">
+      <label>Year</label>
+      <input class="form-input" type="number" name="year" value="{{ year }}" min="2020" max="2030" style="width:90px"/>
+    </div>
+    <div class="fg">
+      <label>Month (optional)</label>
+      <select class="form-input" name="month" style="width:145px">
+        <option value="">All Months</option>
+        {% for i,m in [(1,'January'),(2,'February'),(3,'March'),(4,'April'),(5,'May'),(6,'June'),(7,'July'),(8,'August'),(9,'September'),(10,'October'),(11,'November'),(12,'December')] %}
+          <option value="{{ i }}" {{ 'selected' if month == i|string }}>{{ m }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Search
+    </button>
+  </form>
+</div>
+
+{% if api_result %}
+  {% if api_result.success and holidays %}
+
+  <!-- Today is a holiday alert -->
+  {% if today_holiday %}
+  <div class="today-alert">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <div>
+      <div class="today-alert-title">Today is a Public Holiday — {{ today_holiday.name }}</div>
+      <div class="today-alert-sub">{{ today.strftime('%A, %d %B %Y') }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Stats + Live badge -->
+  <div class="flex justify-between items-center mb-4" style="flex-wrap:wrap;gap:.75rem">
+    <div class="flex items-center gap-2">
+      <span class="live-badge"><span class="live-dot"></span> Live Data</span>
+      <span class="badge badge-blue">{{ holidays|length }} holidays found</span>
+      <span class="badge badge-gray">{{ country }} · {{ year }}</span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="margin-bottom:1.5rem">
+    <div class="stat-card green">
+      <div class="stat-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="stat-label">Total Holidays</div>
+      <div class="stat-value">{{ holidays|length }}</div>
+      <div class="stat-sub">In {{ year }}</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="stat-label">Upcoming</div>
+      <div class="stat-value">{{ upcoming|length }}</div>
+      <div class="stat-sub">From today</div>
+    </div>
+    <div class="stat-card {{ 'amber' if today_holiday else 'blue' }}">
+      <div class="stat-icon-wrap"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <div class="stat-label">Today</div>
+      <div class="stat-value" style="font-size:1rem">{{ today_holiday.name if today_holiday else 'Working Day' }}</div>
+      <div class="stat-sub">{{ today.strftime('%d %b %Y') }}</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg></div>
+      <div class="stat-label">Country</div>
+      <div class="stat-value" style="font-size:1.4rem">{{ country }}</div>
+      <div class="stat-sub">Country code</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Upcoming -->
+    {% if upcoming %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Upcoming Holidays</span>
+        <span class="badge badge-blue">Next {{ upcoming|length }}</span>
+      </div>
+      {% for h in upcoming %}
+      <div class="upcoming-item">
+        <div class="date-box">
+          <div class="date-day">{{ h.date_obj.strftime('%d') }}</div>
+          <div class="date-mon">{{ h.date_obj.strftime('%b') }}</div>
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:.875rem;color:var(--gray-800)">{{ h.name }}</div>
+          <div style="font-size:.73rem;color:var(--gray-400)">{{ h.date_obj.strftime('%A, %d %B %Y') }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Quick info -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">About This Data</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:.75rem">
+        <div class="info-bar">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Data fetched live from Nager.Date external API
+        </div>
+        <div style="font-size:.85rem;color:var(--gray-600);line-height:1.7">
+          This calendar shows official public holidays for <strong>{{ country }}</strong> in <strong>{{ year }}</strong>.
+          Data is fetched in real-time from the Nager.Date API which covers 100+ countries worldwide.
+        </div>
+        <a href="/api/external/holidays?country={{ country }}&year={{ year }}" target="_blank" class="btn btn-secondary btn-sm" style="width:fit-content">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          View Raw JSON
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full list -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">All Holidays — {{ country }} · {{ year }}</span>
+      <span class="badge badge-green">{{ holidays|length }} total</span>
+    </div>
+    {% for h in holidays %}
+    <div class="holiday-row">
+      <div class="h-date">{{ h.date }}</div>
+      <div style="flex:1">
+        <div class="h-name">{{ h.name }}</div>
+        {% if h.localName != h.name %}
+        <div class="h-local">{{ h.localName }}</div>
+        {% endif %}
+      </div>
+      <span class="badge badge-green">Public Holiday</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% elif api_result.success and not holidays %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-state-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="empty-state-title">No holidays found</div>
+      <div class="empty-state-sub">Try selecting a different country, year, or month</div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="error-box">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div style="font-weight:700;color:var(--danger);margin-bottom:.3rem">Could not fetch holiday data</div>
+    <div style="font-size:.83rem;color:var(--gray-500)">{{ error_msg or 'Please check your internet connection and try again.' }}</div>
+  </div>
+  {% endif %}
+
+{% else %}
+<div class="card">
+  <div class="empty-state" style="padding:3.5rem">
+    <div class="empty-state-icon" style="width:56px;height:56px">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="empty-state-title">Select a country and year to view holidays</div>
+    <div class="empty-state-sub">Live holiday data will be fetched from the internet</div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Students — AttendancePro{% endblock %}
+{% block page_title %}Students{% endblock %}
+{% block content %}
+
+{% if session.role == 'teacher' %}
+<div class="info-bar">
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  You are in read-only mode. Contact an Admin to add or modify students.
+</div>
+{% endif %}
+
+<div class="flex justify-between items-center mb-4" style="flex-wrap:wrap;gap:.75rem">
+  <div>
+    <div class="section-heading" style="margin-bottom:.1rem">All Students</div>
+    <div class="text-sm text-muted">{{ students|length }} student(s) found</div>
+  </div>
+  {% if session.role == 'admin' %}
+  <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add Student
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <form method="GET" class="flex gap-2 items-center" style="flex-wrap:wrap">
+      <input class="form-input" name="q" value="{{ q }}" placeholder="Search by name or roll…" style="width:200px"/>
+      <select class="form-input" name="division" style="width:150px">
+        <option value="">All Divisions</option>
+        {% for d in divisions %}
+          <option value="{{ d }}" {{ 'selected' if div == d }}>{{ d }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-secondary btn-sm">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Filter
+      </button>
+      {% if q or div %}
+      <a href="{{ url_for('students') }}" class="btn btn-ghost btn-sm">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Name</th><th>Roll No</th><th>Division</th><th>Email</th>
+          {% if session.role == 'admin' %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% if students %}
+          {% for s in students %}
+          <tr>
+            <td class="text-muted text-xs font-mono">{{ loop.index }}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:var(--primary);flex-shrink:0">{{ s.name[0] }}</div>
+                <span class="font-semibold" style="color:var(--gray-800)">{{ s.name }}</span>
+              </div>
+            </td>
+            <td><span class="badge badge-blue font-mono">{{ s.roll_no }}</span></td>
+            <td><span class="badge badge-gray">{{ s.division }}</span></td>
+            <td class="text-sm text-gray font-mono">{{ s.email or '—' }}</td>
+            {% if session.role == 'admin' %}
+            <td>
+              <div class="flex gap-2">
+                <a href="{{ url_for('edit_student', sid=s.id) }}" class="btn btn-secondary btn-sm">
+                  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Edit
+                </a>
+                <form method="POST" action="{{ url_for('delete_student', sid=s.id) }}" onsubmit="return confirm('Delete {{ s.name }}? This cannot be undone.')">
+                  <button type="submit" class="btn btn-danger btn-sm">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                  </button>
+                </form>
+              </div>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6">
+            <div class="empty-state">
+              <div class="empty-state-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+              <div class="empty-state-title">No students found</div>
+              <div class="empty-state-sub">Try a different search or <a href="{{ url_for('add_student') }}" style="color:var(--primary)">add a student</a></div>
+            </div>
+          </td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

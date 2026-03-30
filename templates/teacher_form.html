@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if teacher else 'Add' }} Teacher{% endblock %}
+{% block page_title %}{{ 'Edit' if teacher else 'Add' }} Teacher{% endblock %}
+{% block content %}
+<div style="max-width:520px">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">{{ 'Edit Teacher Account' if teacher else 'New Teacher Account' }}</span>
+      <span class="badge badge-purple">Admin Only</span>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input class="form-input" type="text" name="name" value="{{ teacher.name if teacher else '' }}" placeholder="e.g. Mr. Sharma" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input class="form-input" type="email" name="email" value="{{ teacher.email if teacher else '' }}" placeholder="teacher@school.com" required/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password {{ '(leave blank to keep current)' if teacher else '*' }}</label>
+          <input class="form-input" type="password" name="password" placeholder="••••••••" {{ '' if teacher else 'required' }}/>
+          <div class="form-hint">Minimum 6 characters recommended</div>
+        </div>
+        <div class="flex gap-3 mt-4">
+          <button type="submit" class="btn btn-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            {{ 'Save Changes' if teacher else 'Create Teacher' }}
+          </button>
+          <a href="{{ url_for('teachers') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Reports — AttendancePro{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block extra_styles %}
+<style>
+.filter-card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1.5rem;box-shadow:var(--shadow-xs)}
+.filter-tabs{display:flex;gap:.4rem;margin-bottom:1rem;background:var(--gray-100);padding:.3rem;border-radius:var(--radius);width:fit-content}
+.ftab{padding:.35rem .9rem;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;text-decoration:none;color:var(--gray-500);transition:all .15s}
+.ftab.active{background:var(--white);color:var(--gray-800);box-shadow:var(--shadow-xs)}
+.filter-row{display:flex;align-items:flex-end;gap:.75rem;flex-wrap:wrap}
+.filter-row .fg{display:flex;flex-direction:column;gap:.3rem}
+.filter-row .fg label{font-size:.78rem;font-weight:600;color:var(--gray-600)}
+.filter-row .fg .form-input{padding:.45rem .75rem;width:auto}
+.date-chip{display:inline-flex;align-items:center;gap:.4rem;background:var(--primary-light);color:var(--primary);border:1px solid var(--primary-mid);border-radius:99px;padding:.28rem .9rem;font-size:.78rem;font-weight:600}
+.pct-cell{min-width:180px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="filter-card">
+  <div style="font-size:.85rem;font-weight:700;color:var(--gray-700);margin-bottom:.9rem">Filter Report</div>
+  <div class="filter-tabs">
+    <a href="{{ url_for('reports', filter='all', division=div_filter) }}" class="ftab {{ 'active' if filter_type == 'all' }}">All Time</a>
+    <a href="{{ url_for('reports', filter='date', single_date=single_date or '', division=div_filter) }}" class="ftab {{ 'active' if filter_type == 'date' }}">Single Date</a>
+    <a href="{{ url_for('reports', filter='range', date_from=date_from, date_to=date_to, division=div_filter) }}" class="ftab {{ 'active' if filter_type == 'range' }}">Date Range</a>
+  </div>
+  <form method="GET" class="filter-row">
+    <input type="hidden" name="filter" value="{{ filter_type }}">
+    {% if filter_type == 'date' %}
+    <div class="fg"><label>Select Date</label><input class="form-input" type="date" name="single_date" value="{{ single_date }}"></div>
+    {% elif filter_type == 'range' %}
+    <div class="fg"><label>From</label><input class="form-input" type="date" name="date_from" value="{{ date_from }}"></div>
+    <div class="fg"><label>To</label><input class="form-input" type="date" name="date_to" value="{{ date_to }}"></div>
+    {% endif %}
+    <div class="fg">
+      <label>Division</label>
+      <select class="form-input" name="division">
+        <option value="">All Divisions</option>
+        {% for d in divisions %}<option value="{{ d }}" {{ 'selected' if div_filter == d }}>{{ d }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Apply
+    </button>
+    {% if filter_type != 'all' or div_filter %}
+    <a href="{{ url_for('reports') }}" class="btn btn-ghost btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="flex justify-between items-center mb-4" style="flex-wrap:wrap;gap:.75rem">
+  <div class="flex items-center gap-2">
+    <span class="date-chip">{{ date_label }}</span>
+    <span class="text-sm text-muted">{{ report|length }} students</span>
+  </div>
+  {% if session.role == 'admin' %}
+  <a href="{{ url_for('export_csv', filter=filter_type, single_date=single_date, date_from=date_from, date_to=date_to) }}" class="btn btn-success">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export CSV
+  </a>
+  {% else %}
+  <span class="text-xs text-muted">CSV export — Admin only</span>
+  {% endif %}
+</div>
+
+{% if report %}
+{% set avg_pct = (report | sum(attribute='pct') / report|length) | round(1) %}
+{% set perfect = report | selectattr('pct', 'equalto', 100.0) | list | length %}
+{% set low_att = report | selectattr('pct', 'lt', 75) | list | length %}
+
+<div class="stats-grid mb-4">
+  <div class="stat-card blue">
+    <div class="stat-icon-wrap"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+    <div class="stat-label">Avg Attendance</div>
+    <div class="stat-value">{{ avg_pct }}%</div>
+    <div class="stat-sub">All students</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon-wrap"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="stat-label">100% Attendance</div>
+    <div class="stat-value">{{ perfect }}</div>
+    <div class="stat-sub">Perfect record</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon-wrap"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+    <div class="stat-label">Below 75%</div>
+    <div class="stat-value">{{ low_att }}</div>
+    <div class="stat-sub">Need attention</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-icon-wrap"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+    <div class="stat-label">Total Students</div>
+    <div class="stat-value">{{ report|length }}</div>
+    <div class="stat-sub">In report</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Student Attendance Report</span>
+    <span class="text-xs text-muted">Sorted by attendance %</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Student</th><th>Roll</th><th>Division</th><th>Present</th><th>Absent</th><th>Days</th><th>Attendance</th></tr>
+      </thead>
+      <tbody>
+        {% for r in report %}
+        <tr>
+          <td class="text-muted text-xs font-mono">{{ loop.index }}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <div style="width:30px;height:30px;border-radius:50%;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--gray-500);flex-shrink:0">{{ r.student.name[0] }}</div>
+              <span class="font-semibold" style="color:var(--gray-800)">{{ r.student.name }}</span>
+            </div>
+          </td>
+          <td><span class="badge badge-blue font-mono">{{ r.student.roll_no }}</span></td>
+          <td><span class="badge badge-gray">{{ r.student.division }}</span></td>
+          <td><span class="badge badge-green">{{ r.present }}</span></td>
+          <td><span class="badge badge-red">{{ r.absent }}</span></td>
+          <td class="text-sm text-gray">{{ r.total }}</td>
+          <td class="pct-cell">
+            {% if r.total > 0 %}
+            <div class="flex items-center gap-2">
+              <div class="progress" style="flex:1">
+                <div class="progress-bar {{ 'high' if r.pct >= 75 else ('mid' if r.pct >= 50 else 'low') }}" style="width:{{ r.pct }}%"></div>
+              </div>
+              <span class="font-bold text-sm" style="min-width:44px;text-align:right;color:{{ 'var(--success)' if r.pct >= 75 else ('var(--warning)' if r.pct >= 50 else 'var(--danger)') }}">{{ r.pct }}%</span>
+            </div>
+            {% if r.pct < 75 %}
+            <div class="text-xs" style="color:var(--danger);margin-top:.15rem;font-weight:500">Below 75% — Alert</div>
+            {% endif %}
+            {% else %}
+            <span class="text-xs text-muted">No records</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-state-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+    <div class="empty-state-title">No data for selected filter</div>
+    <div class="empty-state-sub"><a href="{{ url_for('attendance') }}" style="color:var(--primary)">Mark attendance</a> then check back</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
